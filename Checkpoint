@@ -1,0 +1,49 @@
+import requests
+from bs4 import BeautifulSoup
+
+def get_html_content(url):
+    response = requests.get(url)
+    response.raise_for_status()  # Vérifie si la requête a échoué
+    return BeautifulSoup(response.text, 'html.parser')
+
+def extract_title(soup):
+    title = soup.find('h1', {'id': 'firstHeading'}).text
+    return title
+
+def extract_paragraphs_with_titles(soup):
+    content = {}
+    for section in soup.find_all('span', {'class': 'mw-headline'}):
+        title = section.text
+        paragraph = section.find_next('p')
+        if paragraph:
+            content[title] = paragraph.text
+    return content
+
+def extract_wikipedia_links(soup):
+    links = []
+    for a_tag in soup.find_all('a', href=True):
+        href = a_tag['href']
+        if href.startswith('/wiki/') and not href.startswith('/wiki/Help:') and not href.startswith('/wiki/Category:'):
+            links.append('https://en.wikipedia.org' + href)
+    return links
+
+def analyze_wikipedia_page(url):
+    soup = get_html_content(url)
+    
+    title = extract_title(soup)
+    print(f"Title: {title}")
+    
+    paragraphs_with_titles = extract_paragraphs_with_titles(soup)
+    print("\nParagraphs with Titles:")
+    for title, paragraph in paragraphs_with_titles.items():
+        print(f"Title: {title}")
+        print(f"Paragraph: {paragraph}\n")
+    
+    wikipedia_links = extract_wikipedia_links(soup)
+    print("Wikipedia Links:")
+    for link in wikipedia_links:
+        print(link)
+
+if __name__ == "__main__":
+    test_url = 'https://en.wikipedia.org/wiki/Python_(programming_language)'
+    analyze_wikipedia_page(test_url)
